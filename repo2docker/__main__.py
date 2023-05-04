@@ -48,7 +48,7 @@ class MimicDockerEnvHandling(argparse.Action):
         #  key          pass using current value, or don't pass
         if "=" not in values:
             try:
-                value_to_append = "{}={}".format(values, os.environ[values])
+                value_to_append = f"{values}={os.environ[values]}"
             except KeyError:
                 # no local def, so don't pass
                 return
@@ -300,18 +300,12 @@ def make_r2d(argv=None):
             r2d.volumes[os.path.abspath(args.repo)] = "."
         else:
             r2d.log.error(
-                'Cannot mount "{}" in editable mode '
-                "as it is not a directory".format(args.repo),
+                f'Cannot mount "{args.repo}" in editable mode as it is not a directory',
                 extra=dict(phase="failed"),
             )
             sys.exit(1)
 
-    if args.image_name:
-        r2d.output_image_spec = args.image_name
-    else:
-        # we will pick a name after fetching the repository
-        r2d.output_image_spec = ""
-
+    r2d.output_image_spec = args.image_name if args.image_name else ""
     r2d.json_logs = args.json_logs
 
     r2d.dry_run = not args.build
@@ -400,11 +394,7 @@ def make_r2d(argv=None):
 
     # if the source exists locally we don't want to delete it at the end
     # FIXME: Find a better way to figure out if repo is 'local'. Push this into ContentProvider?
-    if os.path.exists(args.repo):
-        r2d.cleanup_checkout = False
-    else:
-        r2d.cleanup_checkout = args.clean
-
+    r2d.cleanup_checkout = False if os.path.exists(args.repo) else args.clean
     if args.target_repo_dir:
         r2d.target_repo_dir = args.target_repo_dir
 

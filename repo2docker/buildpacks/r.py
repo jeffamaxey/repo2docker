@@ -102,14 +102,11 @@ class RBuildPack(PythonBuildPack):
         """
         if not hasattr(self, "_checkpoint_date"):
             match = re.match(r"r-(\d.\d(.\d)?-)?(\d\d\d\d)-(\d\d)-(\d\d)", self.runtime)
-            if not match:
-                self._checkpoint_date = False
-            else:
-                # turn the last three groups of the match into a date
-                self._checkpoint_date = datetime.date(
-                    *[int(s) for s in match.groups()[-3:]]
-                )
-
+            self._checkpoint_date = (
+                datetime.date(*[int(s) for s in match.groups()[-3:]])
+                if match
+                else False
+            )
         return self._checkpoint_date
 
     def detect(self):
@@ -133,7 +130,7 @@ class RBuildPack(PythonBuildPack):
                 self._checkpoint_date = datetime.date.today() - datetime.timedelta(
                     days=2
                 )
-                self._runtime = "r-{}".format(str(self._checkpoint_date))
+                self._runtime = f"r-{str(self._checkpoint_date)}"
             return True
 
     def get_env(self):
@@ -208,23 +205,19 @@ class RBuildPack(PythonBuildPack):
                     + snapshots["upsi"]
                 )
         raise ValueError(
-            "No snapshot found for {} or {} days prior in packagemanager.rstudio.com".format(
-                snapshot_date.strftime("%Y-%m-%d"), max_days_prior
-            )
+            f'No snapshot found for {snapshot_date.strftime("%Y-%m-%d")} or {max_days_prior} days prior in packagemanager.rstudio.com'
         )
 
     def get_mran_snapshot_url(self, snapshot_date, max_days_prior=7):
         for i in range(max_days_prior):
             try_date = snapshot_date - datetime.timedelta(days=i)
             # Fall back to MRAN if packagemanager.rstudio.com doesn't have it
-            url = "https://mran.microsoft.com/snapshot/{}".format(try_date.isoformat())
+            url = f"https://mran.microsoft.com/snapshot/{try_date.isoformat()}"
             r = requests.head(url)
             if r.ok:
                 return url
         raise ValueError(
-            "No snapshot found for {} or {} days prior in mran.microsoft.com".format(
-                snapshot_date.strftime("%Y-%m-%d"), max_days_prior
-            )
+            f'No snapshot found for {snapshot_date.strftime("%Y-%m-%d")} or {max_days_prior} days prior in mran.microsoft.com'
         )
 
     def get_cran_mirror_url(self, snapshot_date):
@@ -366,10 +359,7 @@ class RBuildPack(PythonBuildPack):
             scripts += [
                 (
                     "${NB_USER}",
-                    # Delete /tmp/downloaded_packages only if install.R fails, as the second
-                    # invocation of install.R might be able to reuse them
-                    "Rscript %s && touch /tmp/.preassembled || true && rm -rf /tmp/downloaded_packages"
-                    % installR_path,
+                    f"Rscript {installR_path} && touch /tmp/.preassembled || true && rm -rf /tmp/downloaded_packages",
                 )
             ]
 
@@ -384,11 +374,7 @@ class RBuildPack(PythonBuildPack):
             assemble_scripts += [
                 (
                     "${NB_USER}",
-                    # only run install.R if the pre-assembly failed
-                    # Delete any downloaded packages in /tmp, as they aren't reused by R
-                    """if [ ! -f /tmp/.preassembled ]; then Rscript {}; rm -rf /tmp/downloaded_packages; fi""".format(
-                        installR_path
-                    ),
+                    f"""if [ ! -f /tmp/.preassembled ]; then Rscript {installR_path}; rm -rf /tmp/downloaded_packages; fi""",
                 )
             ]
 

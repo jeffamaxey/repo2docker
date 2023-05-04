@@ -20,7 +20,7 @@ if status_code == 0:
 
 # Verify - notebook server's Python: 'nbgitpuller' is installed
 status_code = os.system("python3 -c 'import nbgitpuller'")
-if not status_code == 0:
+if status_code != 0:
     raise Exception("notebook server's Python: 'nbgitpuller' ISN'T installed")
 
 

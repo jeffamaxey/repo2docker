@@ -20,15 +20,19 @@ import semver
 def find_semver_match(constraint, versions_list):
     """Find first version in a list of versions that matches a constraint"""
     matcher = create_semver_matcher(constraint)
-    for vstr in reversed(versions_list):
-        if matcher.match(str_to_version(vstr)):
-            return vstr
-    return None
+    return next(
+        (
+            vstr
+            for vstr in reversed(versions_list)
+            if matcher.match(str_to_version(vstr))
+        ),
+        None,
+    )
 
 
 def str_to_version(vstr):
     """Convert a simple x[.y[.z]] version string to a tuple of ints"""
-    return tuple([int(n) for n in vstr.split(".")])
+    return tuple(int(n) for n in vstr.split("."))
 
 
 @lru_cache()
@@ -76,26 +80,25 @@ def create_semver_matcher(constraint_str):
         return ""
     constraint = str_to_version(constraint_str[first_digit.start() :])
 
-    comparison_symbol = constraint_str[0 : first_digit.start()].strip()
+    comparison_symbol = constraint_str[:first_digit.start()].strip()
 
     # Default to "^" search if no matching mode specified (up to next major version)
     if (first_digit.start() == 0) or (comparison_symbol == "^"):
-        if major(constraint) == 0:
+        if major(constraint) != 0:
+            return VersionRange(constraint, (major(constraint) + 1,), True)
+
             # Also, julia treats pre-1.0 releases specially, as if the first
             # non-zero number is actually a major number:
             # https://docs.julialang.org/en/latest/stdlib/Pkg/#Caret-specifiers-1
             # So we need to handle it separately by bumping the first non-zero
             # enumber.
-            for i, n in enumerate(constraint):
-                if (
+        for i, n in enumerate(constraint):
+            if (
                     n != 0 or i == len(constraint) - 1
                 ):  # (using the last existing number handles situations like "^0.0" or "^0")
-                    upper = constraint[0:i] + (n + 1,)
-                    break
-            return VersionRange(constraint, upper, True)
-        else:
-            return VersionRange(constraint, (major(constraint) + 1,), True)
-
+                upper = constraint[:i] + (n + 1,)
+                break
+        return VersionRange(constraint, upper, True)
     # '~' matching (only allowed to bump the last present number by one)
     if comparison_symbol == "~":
         return VersionRange(
@@ -108,7 +111,7 @@ def create_semver_matcher(constraint_str):
     if len(constraint) < 3:
         while len(constraint) < 3:
             constraint = constraint + (0,)
-        constraint_str = constraint_str[0 : first_digit.start()] + ".".join(
+        constraint_str = constraint_str[: first_digit.start()] + ".".join(
             map(str, constraint)
         )
 

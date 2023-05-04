@@ -11,13 +11,13 @@ import tempfile
 
 def test_capture_cmd_no_capture_success():
     # This should succeed
-    for line in utils.execute_cmd(["/bin/bash", "-c", "echo test"]):
+    for _ in utils.execute_cmd(["/bin/bash", "-c", "echo test"]):
         pass
 
 
 def test_capture_cmd_no_capture_fail():
     with pytest.raises(subprocess.CalledProcessError):
-        for line in utils.execute_cmd(["/bin/bash", "-c", "e "]):
+        for _ in utils.execute_cmd(["/bin/bash", "-c", "e "]):
             pass
 
 
@@ -90,7 +90,7 @@ def test_invalid_port_mapping(port_spec):
     with pytest.raises(ValueError) as e:
         utils.validate_and_generate_port_mapping([port_spec])
 
-    assert 'Port specification "{}"'.format(port_spec) in str(e.value)
+    assert f'Port specification "{port_spec}"' in str(e.value)
 
 
 def test_deep_get():
@@ -108,8 +108,8 @@ def test_is_doi():
     assert utils.is_doi("http://doi.org/10.1234/jshd123") != None
     assert utils.is_doi("https://doi.org/10.1234/jshd123") != None
     assert utils.is_doi("http://dx.doi.org/10.1234/jshd123") != None
-    assert utils.is_doi("101234/jshd123") == None
-    assert utils.is_doi("https://mybinder.org") == None
+    assert utils.is_doi("101234/jshd123") is None
+    assert utils.is_doi("https://mybinder.org") is None
 
 
 def test_normalize_doi():

@@ -19,10 +19,7 @@ class JuliaRequireBuildPack(PythonBuildPack):
         # IJulia doesn't build on julia 0.6
         # due to old incompatibilities with Jupyter-core >= 4.5,
         # so use the similarly-old Python 3.5 base environment
-        if V(self.julia_version) < V("0.7"):
-            return "3.5"
-        else:
-            return super().python_version
+        return "3.5" if V(self.julia_version) < V("0.7") else super().python_version
 
     @property
     def julia_version(self):
@@ -163,7 +160,7 @@ class JuliaRequireBuildPack(PythonBuildPack):
         files = {
             "julia/install-repo-dependencies.jl": "/tmp/install-repo-dependencies.jl"
         }
-        files.update(super().get_build_script_files())
+        files |= super().get_build_script_files()
         return files
 
     def detect(self):

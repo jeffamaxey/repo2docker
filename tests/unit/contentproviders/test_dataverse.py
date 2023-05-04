@@ -153,7 +153,7 @@ def test_dataverse_fetch(dv_files, requests_mock):
         for l in dv.fetch(spec, d):
             output.append(l)
         unpacked_files = set(os.listdir(d))
-        expected = set(["directory", "some-file.txt"])
+        expected = {"directory", "some-file.txt"}
         assert expected == unpacked_files
         assert os.path.isfile(
             os.path.join(d, "directory", "subdirectory", "the-other-file.txt")

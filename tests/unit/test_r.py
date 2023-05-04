@@ -26,7 +26,7 @@ def test_version_completion(tmpdir):
     tmpdir.chdir()
 
     with open("runtime.txt", "w") as f:
-        f.write(f"r-3.6-2019-01-01")
+        f.write("r-3.6-2019-01-01")
 
     r = buildpacks.RBuildPack()
     assert r.r_version == "3.6.3"
@@ -78,7 +78,10 @@ def test_snapshot_rspm_date():
 def test_snapshot_mran_date(requested, expected):
     def mock_request_head(url):
         r = Response()
-        if url == "https://mran.microsoft.com/snapshot/" + expected.isoformat():
+        if (
+            url
+            == f"https://mran.microsoft.com/snapshot/{expected.isoformat()}"
+        ):
             r.status_code = 200
         else:
             r.status_code = 404

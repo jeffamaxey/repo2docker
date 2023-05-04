@@ -99,7 +99,7 @@ def mocked_provider(tmpdir, dirhash, tarfile_buf):
 
     adapter.register_uri(
         "GET",
-        "mock://api/1/revision/{}/".format(NULLID),
+        f"mock://api/1/revision/{NULLID}/",
         json={
             "author": {"fullname": "John Doe <jdoe@example.com>"},
             "directory": dirhash,
@@ -107,25 +107,25 @@ def mocked_provider(tmpdir, dirhash, tarfile_buf):
     )
     adapter.register_uri(
         "POST",
-        "mock://api/1/vault/directory/{}/".format(dirhash),
+        f"mock://api/1/vault/directory/{dirhash}/",
         json={
-            "fetch_url": "mock://api/1/vault/directory/{}/raw/".format(dirhash),
+            "fetch_url": f"mock://api/1/vault/directory/{dirhash}/raw/",
             "status": "new",
         },
     )
     adapter.register_uri(
         "GET",
-        "mock://api/1/vault/directory/{}/".format(dirhash),
+        f"mock://api/1/vault/directory/{dirhash}/",
         [
             {
                 "json": {
-                    "fetch_url": "mock://api/1/vault/directory/{}/raw/".format(dirhash),
+                    "fetch_url": f"mock://api/1/vault/directory/{dirhash}/raw/",
                     "status": "pending",
                 }
             },
             {
                 "json": {
-                    "fetch_url": "mock://api/1/vault/directory/{}/raw/".format(dirhash),
+                    "fetch_url": f"mock://api/1/vault/directory/{dirhash}/raw/",
                     "status": "done",
                 }
             },
@@ -133,7 +133,7 @@ def mocked_provider(tmpdir, dirhash, tarfile_buf):
     )
     adapter.register_uri(
         "GET",
-        "mock://api/1/vault/directory/{}/raw/".format(dirhash),
+        f"mock://api/1/vault/directory/{dirhash}/raw/",
         content=tarfile_buf,
     )
     return provider
@@ -142,16 +142,16 @@ def mocked_provider(tmpdir, dirhash, tarfile_buf):
 def test_fetch_revision(tmpdir, gen_tarfile):
     dir_id, tarfile_buf = gen_tarfile
     provider = mocked_provider(tmpdir, dir_id, tarfile_buf)
-    swhid = "swh:1:rev:" + NULLID
+    swhid = f"swh:1:rev:{NULLID}"
     for log in provider.fetch(provider.detect(swhid), tmpdir):
         print(log)
-    assert provider.content_id == "swh:1:dir:" + dir_id
+    assert provider.content_id == f"swh:1:dir:{dir_id}"
 
 
 def test_fetch_directory(tmpdir, gen_tarfile):
     dir_id, tarfile_buf = gen_tarfile
     provider = mocked_provider(tmpdir, dir_id, tarfile_buf)
-    swhid = "swh:1:dir:" + dir_id
+    swhid = f"swh:1:dir:{dir_id}"
     for log in provider.fetch(provider.detect(swhid), tmpdir):
         print(log)
     assert provider.content_id == swhid

@@ -81,7 +81,7 @@ def open_guess_encoding(path):
     """
     detector = chardet.universaldetector.UniversalDetector()
     with open(path, "rb") as f:
-        for line in f.readlines():
+        for line in f:
             detector.feed(line)
             if detector.done:
                 break
@@ -159,7 +159,7 @@ def validate_and_generate_port_mapping(port_mappings):
         if len(host) == 1:
             host = check_port(host[0])
         else:
-            host = tuple((host[0], check_port(host[1])))
+            host = host[0], check_port(host[1])
 
         container_port = check_port_string(container_port)
         ports[container_port] = host
@@ -299,7 +299,7 @@ class ByteSpecification(Integer):
                 "Must be an int or a string with suffix K, M, G, T".format(val=value)
             )
         else:
-            return int(float(num) * self.UNIT_SUFFIXES[suffix])
+            return int(num * self.UNIT_SUFFIXES[suffix])
 
 
 def check_ref(ref, cwd=None):
@@ -365,11 +365,7 @@ def copytree(
     function that supports the same signature (like copy()) can be used.
     """
     names = os.listdir(src)
-    if ignore is not None:
-        ignored_names = ignore(src, names)
-    else:
-        ignored_names = set()
-
+    ignored_names = ignore(src, names) if ignore is not None else set()
     os.makedirs(dst, exist_ok=True)
     errors = []
     for name in names:
@@ -427,10 +423,7 @@ def deep_get(dikt, path):
     """
     value = dikt
     for component in path.split("."):
-        if component.isdigit():
-            value = value[int(component)]
-        else:
-            value = value[component]
+        value = value[int(component)] if component.isdigit() else value[component]
     return value
 
 
@@ -497,14 +490,5 @@ def is_local_pip_requirement(line):
         # file references break isolation
         return True
 
-    if "://" in line:
-        # handle git://../local/file
-        path = line.split("://", 1)[1]
-    else:
-        path = line
-
-    if path.startswith("."):
-        # references a local file
-        return True
-
-    return False
+    path = line.split("://", 1)[1] if "://" in line else line
+    return bool(path.startswith("."))

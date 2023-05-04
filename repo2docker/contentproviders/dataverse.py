@@ -67,18 +67,16 @@ class Dataverse(DoiProvider):
         elif parsed_url.path.startswith("/api/access/datafile"):
             # Raw url pointing to a datafile is a typical output from an External Tool integration
             entity_id = os.path.basename(parsed_url.path)
-            search_query = "q=entityId:" + entity_id + "&type=file"
+            search_query = f"q=entityId:{entity_id}&type=file"
             # Knowing the file identifier query search api to get parent dataset
             search_url = urlunparse(
                 parsed_url._replace(path="/api/search", query=search_query)
             )
-            self.log.debug("Querying Dataverse: " + search_url)
+            self.log.debug(f"Querying Dataverse: {search_url}")
             data = self.urlopen(search_url).json()["data"]
             if data["count_in_response"] != 1:
                 self.log.debug(
-                    "Dataverse search query failed!\n - doi: {}\n - url: {}\n - resp: {}\n".format(
-                        doi, url, json.dump(data)
-                    )
+                    f"Dataverse search query failed!\n - doi: {doi}\n - url: {url}\n - resp: {json.dump(data)}\n"
                 )
                 return
 
@@ -97,26 +95,20 @@ class Dataverse(DoiProvider):
         record_id = spec["record"]
         host = spec["host"]
 
-        yield "Fetching Dataverse record {}.\n".format(record_id)
-        url = "{}/api/datasets/:persistentId?persistentId={}".format(
-            host["url"], record_id
-        )
+        yield f"Fetching Dataverse record {record_id}.\n"
+        url = f'{host["url"]}/api/datasets/:persistentId?persistentId={record_id}'
 
         resp = self.urlopen(url, headers={"accept": "application/json"})
         record = resp.json()["data"]
 
         for fobj in deep_get(record, "latestVersion.files"):
-            file_url = "{}/api/access/datafile/{}".format(
-                host["url"], deep_get(fobj, "dataFile.id")
-            )
+            file_url = f'{host["url"]}/api/access/datafile/{deep_get(fobj, "dataFile.id")}'
             filename = os.path.join(fobj.get("directoryLabel", ""), fobj["label"])
 
             file_ref = {"download": file_url, "filename": filename}
-            fetch_map = {key: key for key in file_ref.keys()}
+            fetch_map = {key: key for key in file_ref}
 
-            for line in self.fetch_file(file_ref, fetch_map, output_dir):
-                yield line
-
+            yield from self.fetch_file(file_ref, fetch_map, output_dir)
         new_subdirs = os.listdir(output_dir)
         # if there is only one new subdirectory move its contents
         # to the top level directory

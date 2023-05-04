@@ -57,7 +57,7 @@ class Zenodo(DoiProvider):
         url = self.doi2url(doi)
 
         for host in self.hosts:
-            if any([url.startswith(s) for s in host["hostname"]]):
+            if any(url.startswith(s) for s in host["hostname"]):
                 self.record_id = url.rsplit("/", maxsplit=1)[1]
                 return {"record": self.record_id, "host": host}
 
@@ -66,10 +66,9 @@ class Zenodo(DoiProvider):
         record_id = spec["record"]
         host = spec["host"]
 
-        yield "Fetching Zenodo record {}.\n".format(record_id)
+        yield f"Fetching Zenodo record {record_id}.\n"
         resp = self.urlopen(
-            "{}{}".format(host["api"], record_id),
-            headers={"accept": "application/json"},
+            f'{host["api"]}{record_id}', headers={"accept": "application/json"}
         )
 
         record = resp.json()
@@ -77,10 +76,9 @@ class Zenodo(DoiProvider):
         files = deep_get(record, host["filepath"])
         only_one_file = len(files) == 1
         for file_ref in files:
-            for line in self.fetch_file(
+            yield from self.fetch_file(
                 file_ref, host, output_dir, unzip=only_one_file
-            ):
-                yield line
+            )
 
     @property
     def content_id(self):

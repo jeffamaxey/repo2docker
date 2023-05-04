@@ -28,29 +28,22 @@ def test_env(capfd):
         result = subprocess.run(
             [
                 "repo2docker",
-                # 'key=value' are exported as is in docker
                 "-e",
-                "FOO={}".format(ts),
+                f"FOO={ts}",
                 "--env",
                 "BAR=baz",
-                # 'key' is exported with the currently exported value
                 "--env",
                 "SPAM",
-                # 'key' is not exported if it is not exported.
                 "-e",
                 "NO_SPAM",
-                # 'key=' is exported in docker with an empty string as
-                # value
                 "--env",
                 "SPAM_2=",
                 tmpdir,
                 "--",
                 "/bin/bash",
                 "-c",
-                # Docker exports all passed env variables, so we can
-                # just look at exported variables.
                 "export",
-            ],
+            ]
         )
     captured = capfd.readouterr()
     print(captured.out, end="")
@@ -65,7 +58,7 @@ def test_env(capfd):
 
     # stderr should contain lines of output
     declares = [x for x in captured.err.splitlines() if x.startswith("declare")]
-    assert 'declare -x FOO="{}"'.format(ts) in declares
+    assert f'declare -x FOO="{ts}"' in declares
     assert 'declare -x BAR="baz"' in declares
     assert 'declare -x SPAM="eggs"' in declares
     assert "declare -x NO_SPAM" not in declares

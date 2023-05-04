@@ -103,8 +103,8 @@ def test_detect_hydroshare(requests_mock):
 def hydroshare_archive(prefix="b8f6eae9d89241cf8b5904033460af61/data/contents"):
     with NamedTemporaryFile(suffix=".zip") as zfile:
         with ZipFile(zfile.name, mode="w") as zip:
-            zip.writestr("{}/some-file.txt".format(prefix), "some content")
-            zip.writestr("{}/some-other-file.txt".format(prefix), "some more content")
+            zip.writestr(f"{prefix}/some-file.txt", "some content")
+            zip.writestr(f"{prefix}/some-other-file.txt", "some more content")
 
         yield zfile
 
@@ -112,24 +112,23 @@ def hydroshare_archive(prefix="b8f6eae9d89241cf8b5904033460af61/data/contents"):
 class MockResponse:
     def __init__(self, content_type, status_code):
         self.status_code = status_code
-        self.headers = dict()
-        self.headers["content-type"] = content_type
+        self.headers = {"content-type": content_type}
 
 
 def test_fetch_bag():
     # we "fetch" a local ZIP file to simulate a Hydroshare resource
     with hydroshare_archive() as hydro_path:
         with patch.object(
-            Hydroshare,
-            "urlopen",
-            side_effect=[
-                MockResponse("application/html", 200),
-                MockResponse("application/zip", 200),
-            ],
-        ):
+                    Hydroshare,
+                    "urlopen",
+                    side_effect=[
+                        MockResponse("application/html", 200),
+                        MockResponse("application/zip", 200),
+                    ],
+                ):
             with patch.object(
-                Hydroshare, "_urlretrieve", side_effect=[(hydro_path, None)]
-            ):
+                            Hydroshare, "_urlretrieve", side_effect=[(hydro_path, None)]
+                        ):
                 hydro = Hydroshare()
                 hydro.resource_id = "b8f6eae9d89241cf8b5904033460af61"
                 spec = {
@@ -144,20 +143,17 @@ def test_fetch_bag():
                 }
 
                 with TemporaryDirectory() as d:
-                    output = []
-                    for l in hydro.fetch(spec, d):
-                        output.append(l)
-
+                    output = list(hydro.fetch(spec, d))
                     unpacked_files = set(os.listdir(d))
-                    expected = set(["some-other-file.txt", "some-file.txt"])
+                    expected = {"some-other-file.txt", "some-file.txt"}
                     assert expected == unpacked_files
 
 
 def test_fetch_bag_failure():
     with hydroshare_archive():
         with patch.object(
-            Hydroshare, "urlopen", side_effect=[MockResponse("application/html", 500)]
-        ):
+                    Hydroshare, "urlopen", side_effect=[MockResponse("application/html", 500)]
+                ):
             hydro = Hydroshare()
             spec = {
                 "host": {
@@ -171,19 +167,19 @@ def test_fetch_bag_failure():
             }
             with TemporaryDirectory() as d:
                 with pytest.raises(
-                    ContentProviderException,
-                    match=r"Failed to download bag\. status code 500\.",
-                ):
+                                    ContentProviderException,
+                                    match=r"Failed to download bag\. status code 500\.",
+                                ):
                     # loop for yield statements
-                    for l in hydro.fetch(spec, d):
+                    for _ in hydro.fetch(spec, d):
                         pass
 
 
 def test_fetch_bag_timeout():
     with hydroshare_archive():
         with patch.object(
-            Hydroshare, "urlopen", side_effect=[MockResponse("application/html", 200)]
-        ):
+                    Hydroshare, "urlopen", side_effect=[MockResponse("application/html", 200)]
+                ):
             hydro = Hydroshare()
             spec = {
                 "host": {
@@ -197,9 +193,9 @@ def test_fetch_bag_timeout():
             }
             with TemporaryDirectory() as d:
                 with pytest.raises(
-                    ContentProviderException,
-                    match=r"Bag taking too long to prepare, exiting now, try again later\.",
-                ):
+                                    ContentProviderException,
+                                    match=r"Bag taking too long to prepare, exiting now, try again later\.",
+                                ):
                     # loop for yield statements
-                    for l in hydro.fetch(spec, d, timeout=0):
+                    for _ in hydro.fetch(spec, d, timeout=0):
                         pass

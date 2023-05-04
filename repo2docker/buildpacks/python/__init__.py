@@ -41,9 +41,6 @@ class PythonBuildPack(CondaBuildPack):
         added to preassemble unless local references are found,
         in which case this happens in assemble.
         """
-        # KERNEL_PYTHON_PREFIX is the env with the kernel,
-        # whether it's distinct from the notebook or the same.
-        pip = "${KERNEL_PYTHON_PREFIX}/bin/pip"
         scripts = []
         if self.py2:
             # using python 2 kernel,
@@ -64,10 +61,13 @@ class PythonBuildPack(CondaBuildPack):
         # install requirements.txt in the kernel env
         requirements_file = self.binder_path("requirements.txt")
         if os.path.exists(requirements_file):
+            # KERNEL_PYTHON_PREFIX is the env with the kernel,
+            # whether it's distinct from the notebook or the same.
+            pip = "${KERNEL_PYTHON_PREFIX}/bin/pip"
             scripts.append(
                 (
                     "${NB_USER}",
-                    '{} install --no-cache-dir -r "{}"'.format(pip, requirements_file),
+                    f'{pip} install --no-cache-dir -r "{requirements_file}"',
                 )
             )
         return scripts
@@ -118,17 +118,15 @@ class PythonBuildPack(CondaBuildPack):
         # will be installed in the python 3 notebook server env.
         assemble_scripts = super().get_assemble_scripts()
         setup_py = "setup.py"
-        # KERNEL_PYTHON_PREFIX is the env with the kernel,
-        # whether it's distinct from the notebook or the same.
-        pip = "${KERNEL_PYTHON_PREFIX}/bin/pip"
         if not self._should_preassemble_pip:
             assemble_scripts.extend(self._get_pip_scripts())
 
         # setup.py exists *and* binder dir is not used
         if not self.binder_dir and os.path.exists(setup_py):
-            assemble_scripts.append(
-                ("${NB_USER}", "{} install --no-cache-dir .".format(pip))
-            )
+            # KERNEL_PYTHON_PREFIX is the env with the kernel,
+            # whether it's distinct from the notebook or the same.
+            pip = "${KERNEL_PYTHON_PREFIX}/bin/pip"
+            assemble_scripts.append(("${NB_USER}", f"{pip} install --no-cache-dir ."))
         return assemble_scripts
 
     def detect(self):
@@ -140,10 +138,7 @@ class PythonBuildPack(CondaBuildPack):
         if os.path.exists(runtime_txt):
             with open(runtime_txt) as f:
                 runtime = f.read().strip()
-            if runtime.startswith("python-"):
-                return True
-            else:
-                return False
+            return bool(runtime.startswith("python-"))
         if not self.binder_dir and os.path.exists(setup_py):
             return True
         return os.path.exists(requirements_txt)

@@ -457,7 +457,7 @@ class BuildPack:
         last_user = "root"
         for user, script in self.get_build_scripts():
             if last_user != user:
-                build_script_directives.append("USER {}".format(user))
+                build_script_directives.append(f"USER {user}")
                 last_user = user
             build_script_directives.append(
                 "RUN {}".format(textwrap.dedent(script.strip("\n")))
@@ -467,7 +467,7 @@ class BuildPack:
         last_user = "root"
         for user, script in self.get_assemble_scripts():
             if last_user != user:
-                assemble_script_directives.append("USER {}".format(user))
+                assemble_script_directives.append(f"USER {user}")
                 last_user = user
             assemble_script_directives.append(
                 "RUN {}".format(textwrap.dedent(script.strip("\n")))
@@ -477,7 +477,7 @@ class BuildPack:
         last_user = "root"
         for user, script in self.get_preassemble_scripts():
             if last_user != user:
-                preassemble_script_directives.append("USER {}".format(user))
+                preassemble_script_directives.append(f"USER {user}")
                 last_user = user
             preassemble_script_directives.append(
                 "RUN {}".format(textwrap.dedent(script.strip("\n")))
@@ -611,8 +611,7 @@ class BuildPack:
 
         build_kwargs.update(extra_build_kwargs)
 
-        for line in client.build(**build_kwargs):
-            yield line
+        yield from client.build(**build_kwargs)
 
 
 class BaseImage(BuildPack):
@@ -642,10 +641,7 @@ class BaseImage(BuildPack):
                     # We're doing shell injection around here, gotta be careful.
                     # FIXME: Add support for specifying version numbers
                     if not re.match(r"^[a-z0-9.+-]+", package):
-                        raise ValueError(
-                            "Found invalid package name {} in "
-                            "apt.txt".format(package)
-                        )
+                        raise ValueError(f"Found invalid package name {package} in apt.txt")
                     extra_apt_packages.append(package)
 
             scripts.append(
@@ -675,17 +671,8 @@ class BaseImage(BuildPack):
 
     def get_post_build_scripts(self):
         post_build = self.binder_path("postBuild")
-        if os.path.exists(post_build):
-            return [post_build]
-        return []
+        return [post_build] if os.path.exists(post_build) else []
 
     def get_start_script(self):
         start = self.binder_path("start")
-        if os.path.exists(start):
-            # Return an absolute path to start
-            # This is important when built container images start with
-            # a working directory that is different from ${REPO_DIR}
-            # This isn't a problem with anything else, since start is
-            # the only path evaluated at container start time rather than build time
-            return os.path.join("${REPO_DIR}", start)
-        return None
+        return os.path.join("${REPO_DIR}", start) if os.path.exists(start) else None

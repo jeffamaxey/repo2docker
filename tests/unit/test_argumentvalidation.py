@@ -31,8 +31,7 @@ invalid_image_name_template = (
 def validate_arguments(builddir, args_list=".", expected=None, disable_dockerd=False):
     try:
         cmd = ["repo2docker"]
-        for k in args_list:
-            cmd.append(k)
+        cmd.extend(iter(args_list))
         cmd.append(builddir)
         env = os.environ.copy()
         if disable_dockerd:

@@ -79,8 +79,7 @@ class CondaBuildPack(BaseImage):
 
     def get_env(self):
         """Make kernel env the default for `conda install`"""
-        env = super().get_env() + [("CONDA_DEFAULT_ENV", "${KERNEL_PYTHON_PREFIX}")]
-        return env
+        return super().get_env() + [("CONDA_DEFAULT_ENV", "${KERNEL_PYTHON_PREFIX}")]
 
     def get_path(self):
         """Return paths (including conda environment path) to be added to
@@ -183,16 +182,16 @@ class CondaBuildPack(BaseImage):
                 else:
                     raise ValueError(f"Python version {py_version} is not supported!")
         files[
-            "conda/" + frozen_name
+            f"conda/{frozen_name}"
         ] = self._nb_environment_file = "/tmp/env/environment.lock"
 
         # add requirements.txt, if present
         if os.path.exists(os.path.join(HERE, pip_frozen_name)):
             files[
-                "conda/" + pip_frozen_name
+                f"conda/{pip_frozen_name}"
             ] = self._nb_requirements_file = "/tmp/env/requirements.txt"
 
-        files.update(super().get_build_script_files())
+        files |= super().get_build_script_files()
         return files
 
     _environment_yaml = None
@@ -354,10 +353,7 @@ class CondaBuildPack(BaseImage):
             )
 
         if self.uses_r:
-            if self.r_version:
-                r_pin = "=" + self.r_version
-            else:
-                r_pin = ""
+            r_pin = f"={self.r_version}" if self.r_version else ""
             scripts.append(
                 (
                     "${NB_USER}",

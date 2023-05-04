@@ -23,18 +23,20 @@ class LegacyBinderDockerBuildPack:
             with open("Dockerfile", "r") as f:
                 for line in f:
                     if line.startswith("FROM"):
-                        if "andrewosh/binder-base" in line.split("#")[0].lower():
-                            log.error(
-                                "The legacy buildpack was removed in January 2020."
-                            )
-                            log.error(
-                                "Please see https://repo2docker.readthedocs.io/en/"
-                                "latest/configuration/index.html for alternative ways "
-                                "of configuring your repository."
-                            )
-                            raise RuntimeError("The legacy buildpack has been removed.")
-                        else:
+                        if (
+                            "andrewosh/binder-base"
+                            not in line.split("#")[0].lower()
+                        ):
                             return False
+                        log.error(
+                            "The legacy buildpack was removed in January 2020."
+                        )
+                        log.error(
+                            "Please see https://repo2docker.readthedocs.io/en/"
+                            "latest/configuration/index.html for alternative ways "
+                            "of configuring your repository."
+                        )
+                        raise RuntimeError("The legacy buildpack has been removed.")
         except FileNotFoundError:
             pass
 

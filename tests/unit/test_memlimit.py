@@ -30,7 +30,7 @@ def test_memory_limit_enforced(tmpdir):
     # Test that the buildpack passes the right arguments to the docker
     # client in order to enforce the memory limit
     tmpdir.chdir()
-    for line in BaseImage().build(
+    for _ in BaseImage().build(
         fake_client,
         "image-2",
         memory_limit,
@@ -77,7 +77,7 @@ def test_memlimit_argument_type(BuildPack):
     fake_client.build.return_value = iter([fake_log_value])
 
     with pytest.raises(ValueError) as exc_info:
-        for line in BuildPack().build(fake_client, "image-2", "10Gi", {}, [], {}):
+        for _ in BuildPack().build(fake_client, "image-2", "10Gi", {}, [], {}):
             pass
 
         assert "The memory limit has to be specified as an" in str(exc_info.value)

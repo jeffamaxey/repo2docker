@@ -36,11 +36,7 @@ def read_port_mapping_response(
     else:
         host = "localhost"
 
-    if port:
-        ports = {port_protocol: host_port}
-    else:
-        ports = {}
-
+    ports = {port_protocol: host_port} if port else {}
     # run in an empty temporary directory
     td = tempfile.TemporaryDirectory()
     # cleanup at the end of the test
@@ -95,7 +91,7 @@ def read_port_mapping_response(
         else:
             break
     else:
-        pytest.fail("Never succeded in talking to %s" % url)
+        pytest.fail(f"Never succeded in talking to {url}")
     assert "Directory listing" in r.text
 
 

@@ -8,14 +8,17 @@ def test_Repo2Docker_external_build_scripts(tmpdir):
     tempfile = tmpdir.join("absolute-script")
     tempfile.write("Hello World of Absolute Paths!")
 
+
+
     class MockBuildPack(PythonBuildPack):
         def detect(self):
             return True
 
         def get_build_script_files(self):
             files = {str(tempfile): "/tmp/my_extra_script"}
-            files.update(super().get_build_script_files())
+            files |= super().get_build_script_files()
             return files
+
 
     app = Repo2Docker(repo=str(tmpdir))
     app.buildpacks = [MockBuildPack]

@@ -425,9 +425,7 @@ class Repo2Docker(Application):
             entry = engines[self.engine]
         except KeyError:
             raise ContainerEngineException(
-                "Container engine '{}' not found. Available engines: {}".format(
-                    self.engine, ",".join(engines.keys())
-                )
+                f"""Container engine '{self.engine}' not found. Available engines: {",".join(engines.keys())}"""
             )
         engine_class = entry.load()
         return engine_class(parent=self)
@@ -448,8 +446,12 @@ class Repo2Docker(Application):
             if spec is not None:
                 picked_content_provider = cp
                 self.log.info(
-                    "Picked {cp} content "
-                    "provider.\n".format(cp=cp.__class__.__name__)
+                    (
+                        "Picked {cp} content "
+                        "provider.\n".format(
+                            picked_content_provider=picked_content_provider.__class__.__name__
+                        )
+                    )
                 )
                 break
 
@@ -468,7 +470,7 @@ class Repo2Docker(Application):
             self.log.info(log_line, extra=dict(phase="fetching"))
 
         if not self.output_image_spec:
-            image_spec = "r2d" + self.repo
+            image_spec = f"r2d{self.repo}"
             # if we are building from a subdirectory include that in the
             # image name so we can tell builds from different sub-directories
             # apart.
@@ -566,7 +568,7 @@ class Repo2Docker(Application):
                     )
                     last_emit_time = time.time()
         self.log.info(
-            "Successfully pushed {}".format(self.output_image_spec),
+            f"Successfully pushed {self.output_image_spec}",
             extra=dict(phase="pushing"),
         )
 
@@ -585,8 +587,7 @@ class Repo2Docker(Application):
         """
         client = self.get_engine()
 
-        docker_host = os.environ.get("DOCKER_HOST")
-        if docker_host:
+        if docker_host := os.environ.get("DOCKER_HOST"):
             host_name = urlparse(docker_host).hostname
         else:
             host_name = "127.0.0.1"
@@ -605,17 +606,14 @@ class Repo2Docker(Application):
                 "0.0.0.0",
                 "--port",
                 port,
-                "--NotebookApp.custom_display_url=http://{}:{}".format(host_name, port),
+                f"--NotebookApp.custom_display_url=http://{host_name}:{port}",
                 "--NotebookApp.default_url=/lab",
             ]
-            ports = {"%s/tcp" % port: port}
+            ports = {f"{port}/tcp": port}
         else:
             # run_cmd given by user, if port is also given then pass it on
             run_cmd = self.run_cmd
-            if self.ports:
-                ports = self.ports
-            else:
-                ports = {}
+            ports = self.ports if self.ports else {}
         # store ports on self so they can be retrieved in tests
         self.ports = ports
 
@@ -638,7 +636,7 @@ class Repo2Docker(Application):
             environment=self.environment,
         )
 
-        run_kwargs.update(self.extra_run_kwargs)
+        run_kwargs |= self.extra_run_kwargs
 
         container = client.run(self.output_image_spec, **run_kwargs)
 
@@ -703,7 +701,7 @@ class Repo2Docker(Application):
         client = self.get_engine()
         for image in client.images():
             for tag in image.tags:
-                if tag == self.output_image_spec + ":latest":
+                if tag == f"{self.output_image_spec}:latest":
                     return True
         return False
 
@@ -726,19 +724,17 @@ class Repo2Docker(Application):
         # expensive to copy.
         if os.path.isdir(self.repo):
             checkout_path = self.repo
+        elif self.git_workdir is None:
+            checkout_path = tempfile.mkdtemp(prefix="repo2docker")
         else:
-            if self.git_workdir is None:
-                checkout_path = tempfile.mkdtemp(prefix="repo2docker")
-            else:
-                checkout_path = self.git_workdir
+            checkout_path = self.git_workdir
 
         try:
             self.fetch(self.repo, self.ref, checkout_path)
 
             if self.find_image():
                 self.log.info(
-                    "Reusing existing image ({}), not "
-                    "building.".format(self.output_image_spec)
+                    f"Reusing existing image ({self.output_image_spec}), not building."
                 )
                 # no need to build, so skip to the end by `return`ing here
                 # this will still execute the finally clause and let's us
@@ -753,7 +749,7 @@ class Repo2Docker(Application):
                         self.subdir,
                         extra=dict(phase="failure"),
                     )
-                    raise FileNotFoundError("Could not find {}".format(checkout_path))
+                    raise FileNotFoundError(f"Could not find {checkout_path}")
 
             with chdir(checkout_path):
                 for BP in self.buildpacks:
@@ -779,7 +775,7 @@ class Repo2Docker(Application):
                 }
                 if self.target_repo_dir:
                     build_args["REPO_DIR"] = self.target_repo_dir
-                build_args.update(self.extra_build_args)
+                build_args |= self.extra_build_args
 
                 if self.dry_run:
                     print(picked_buildpack.render(build_args))

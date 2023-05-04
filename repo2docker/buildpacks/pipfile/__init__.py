@@ -51,10 +51,8 @@ class PipfileBuildPack(CondaBuildPack):
         py_version = None
         for requires in requires_sources:
             for key in ("python_full_version", "python_version"):
-                version_str = requires.get(key, None)
-                if version_str:
-                    match = VERSION_PAT.match(version_str)
-                    if match:
+                if version_str := requires.get(key, None):
+                    if match := VERSION_PAT.match(version_str):
                         py_version = match.group()
                 if py_version:
                     break
@@ -68,11 +66,11 @@ class PipfileBuildPack(CondaBuildPack):
             else:
                 # return major.minor
                 self._python_version = ".".join(py_version.split(".")[:2])
-            return self._python_version
         else:
             # use the default Python
             self._python_version = self.major_pythons["3"]
-            return self._python_version
+
+        return self._python_version
 
     def get_preassemble_script_files(self):
         """Return files needed for preassembly"""

@@ -57,7 +57,7 @@ def test_image_name_contains_sha1(repo_with_content):
     # force selection of the git content provider by prefixing path with
     # file://. This is important as the Local content provider does not
     # store the SHA1 in the repo spec
-    argv = ["--no-build", "file://" + upstream]
+    argv = ["--no-build", f"file://{upstream}"]
     app = make_r2d(argv)
 
     app.start()
